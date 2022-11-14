@@ -6,11 +6,14 @@ import org.springframework.stereotype.Service;
 import pl.bank.bankAccountProj.dto.CreateUserDto;
 import pl.bank.bankAccountProj.entity.Account;
 import pl.bank.bankAccountProj.entity.BankUser;
+import pl.bank.bankAccountProj.entity.SubAccount;
 import pl.bank.bankAccountProj.exception.ApiException;
 import pl.bank.bankAccountProj.repository.AccountRepository;
+import pl.bank.bankAccountProj.repository.SubAccountRepository;
 import pl.bank.bankAccountProj.repository.UserRepository;
 import pl.bank.bankAccountProj.util.DateUtils;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
@@ -25,16 +28,23 @@ public class UserService {
     private final UserRepository userRepository;
     private final AccountRepository accountRepository;
 
+    private final SubAccountRepository subAccountRepository;
+
     @Autowired
-    public UserService(UserRepository userRepository, AccountRepository accountRepository) {
+    public UserService(UserRepository userRepository, AccountRepository accountRepository, SubAccountRepository subAccountRepository) {
         this.userRepository = userRepository;
         this.accountRepository = accountRepository;
+        this.subAccountRepository = subAccountRepository;
     }
 
     public BankUser createUser(CreateUserDto userData) {
         validateUserData(userData);
         BankUser newBankUser = new BankUser(userData.getPesel(), userData.getName(), userData.getSurname(), DateUtils.getCurrTime());
-        Account newAccount = new Account(userData.getStartBalance(), DateUtils.getCurrTime(), DateUtils.getCurrTime(), newBankUser);
+        Account newAccount = new Account(DateUtils.getCurrTime(), DateUtils.getCurrTime(), newBankUser);
+        SubAccount newSubAccountPln = new SubAccount(userData.getStartBalance(), "PLN", DateUtils.getCurrTime(), newAccount);
+        SubAccount newSubAccountUsd = new SubAccount(BigDecimal.ZERO, "USD", DateUtils.getCurrTime(), newAccount);
+        subAccountRepository.save(newSubAccountPln);
+        subAccountRepository.save(newSubAccountUsd);
         userRepository.save(newBankUser);
         accountRepository.save(newAccount);
         return newBankUser;
@@ -52,13 +62,19 @@ public class UserService {
         {
             errorFields.add("surname");
         }
-        if (accountData.getPesel() == null || !isUserOver18(accountData.getPesel())) //isblank check if walid
+        if (accountData.getPesel() == null || !isUserOver18(accountData.getPesel()) || isUserAlreadyRegistered(accountData.getPesel())) //isblank check if walid
         {
-            errorFields.add("surname");
+            errorFields.add("pesel");
         }
+
         if (!errorFields.isEmpty()) {
+            log.error("validateUserData, error fields: {}", errorFields);
             throw new ApiException("500", "validateAccountError", errorFields);
         }
+    }
+
+    private boolean isUserAlreadyRegistered(Long pesel) {
+        return userRepository.findByPesel(pesel).orElse(null) == null;
     }
 
     private boolean isUserOver18(Long pesel) {

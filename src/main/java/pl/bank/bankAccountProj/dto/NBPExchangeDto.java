@@ -1,7 +1,10 @@
 package pl.bank.bankAccountProj.dto;
 
+import lombok.Data;
+
 import java.util.List;
 
+@Data
 public class NBPExchangeDto {
 
     private String table;
@@ -16,35 +19,5 @@ public class NBPExchangeDto {
         this.rates = rates;
     }
 
-    public String getTable() {
-        return table;
-    }
 
-    public void setTable(String table) {
-        this.table = table;
-    }
-
-    public String getCurrency() {
-        return currency;
-    }
-
-    public void setCurrency(String currency) {
-        this.currency = currency;
-    }
-
-    public String getCode() {
-        return code;
-    }
-
-    public void setCode(String code) {
-        this.code = code;
-    }
-
-    public List<NBPExchangeRatesDto> getRates() {
-        return rates;
-    }
-
-    public void setRates(List<NBPExchangeRatesDto> rates) {
-        this.rates = rates;
-    }
 }

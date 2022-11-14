@@ -1,24 +1,19 @@
 package pl.bank.bankAccountProj.dto;
 
 import lombok.Builder;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.Data;
 
 import java.math.BigDecimal;
+import java.util.HashMap;
 
-@Getter
-@Setter
+@Data
 public class ExchangeCurrencyDto {
     private String accountId;
-    private BigDecimal finalBalancePln;
-    private BigDecimal finalBalanceUsd;
+    private HashMap<String, BigDecimal> finalBalanceMap;
 
     @Builder
-    public ExchangeCurrencyDto(String accountId, BigDecimal finalBalancePln, BigDecimal finalBalanceUsd) {
+    public ExchangeCurrencyDto(String accountId, HashMap<String, BigDecimal> finalBalanceMap) {
         this.accountId = accountId;
-        this.finalBalancePln = finalBalancePln;
-        this.finalBalanceUsd = finalBalanceUsd;
+        this.finalBalanceMap = finalBalanceMap;
     }
-
-
 }

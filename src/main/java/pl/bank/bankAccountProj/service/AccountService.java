@@ -16,6 +16,7 @@ import pl.bank.bankAccountProj.util.DateUtils;
 import javax.transaction.Transactional;
 import java.math.BigDecimal;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
 
@@ -53,18 +54,18 @@ public class AccountService {
 
     private GetAccountInfoDto mapAccount(Account account) {
         return GetAccountInfoDto.builder()
-                .pesel(account.getUser().getPesel())
-                .balancePln(account.getBalancePln())
-                .balanceUsd(account.getBalanceUsd())
+                .pesel(account.getBankUser().getPesel())
+                .balances(getBalanceFromSubAccount(account))
                 .lastOperationDate(account.getModifyDate())
                 .build();
     }
     @Transactional
-    public ExchangeCurrencyDto currencyExchange(String currencyFrom, String currencyTo, String accountId, BigDecimal amount) {
+    public ExchangeCurrencyDto currencyExchangeV2(String currencyFrom, String currencyTo, String accountId, BigDecimal amount) {
         Account account = accountRepository.getById(accountId);
         if (account == null) {
             //blad - nieznaleziono rachunku
         }
+        List<SubAccount> subAccountList = (List<SubAccount>) account.getSubAccountCollection();
         validateCurrencyExchange(currencyFrom, currencyTo, account, amount);
         // dla zalozenia ze operujemy tylko na wymianie z PLN tak jak w polskich bankach
         Double plnTradeValue = nbpConnectionService.getTodaysTradePlnValue(currencyFrom == "PLN" ? currencyTo : currencyFrom);
@@ -72,46 +73,66 @@ public class AccountService {
             //blad - blad pobierania danych z nbp
         }
         if (currencyFrom == "PLN") {
-            doExchange(true, amount, account, plnTradeValue);
+            doExchangeV2(true, amount, account, subAccountList, plnTradeValue);
         } else {
-            doExchange(false, amount, account, plnTradeValue);
+            doExchangeV2(false, amount, account, subAccountList, plnTradeValue);
         }
         return ExchangeCurrencyDto
                 .builder()
                 .accountId(accountId)
-                .finalBalancePln(account.getBalancePln())
-                .finalBalanceUsd(account.getBalanceUsd())
+                .finalBalanceMap(getBalanceFromSubAccount(account))
                 .build();
     }
 
-    private void doExchange(boolean fromPLN, BigDecimal amount, Account account, Double nbpTradeValue) {
-        BigDecimal plnAmount = account.getBalancePln();
-        BigDecimal usdAmount = account.getBalanceUsd();
-        if (fromPLN) {
-            plnAmount = plnAmount.subtract(amount);
-            usdAmount = amount.multiply(BigDecimal.valueOf(USDspread)).divide(BigDecimal.valueOf(nbpTradeValue));
-        } else {
-            usdAmount = usdAmount.subtract(amount);
-            plnAmount = amount.multiply(BigDecimal.valueOf(PLNspread)).multiply(BigDecimal.valueOf(nbpTradeValue));
-        }
-        account.setBalancePln(plnAmount);
-        account.setBalanceUsd(usdAmount);
-        account.setModifyDate(DateUtils.getCurrTime());
-        accountRepository.save(account);
+    private HashMap<String, BigDecimal> getBalanceFromSubAccount(Account account) {
+        HashMap<String, BigDecimal> finalBalanceMap = new HashMap<>();
+        account.getSubAccountCollection().forEach(
+                subAcc -> finalBalanceMap.put(subAcc.getCurrency(),subAcc.getBalance())
+        );
+        return finalBalanceMap;
     }
 
+    private void doExchangeV2(boolean fromPLN, BigDecimal amount, Account account, List<SubAccount> subAccountList, Double nbpTradeValue) {
+        SubAccount plnSubAccount = subAccountList.stream()
+                .filter(sa -> Objects.equals(sa.getCurrency(), "PLN"))
+                .findFirst().orElse(new SubAccount());
+        SubAccount usdSubAccount = subAccountList.stream()
+                .filter(sa -> Objects.equals(sa.getCurrency(), "USD"))
+                .findFirst().orElse(new SubAccount());
+        if (fromPLN) {
+            plnSubAccount
+                    .setBalance(plnSubAccount.getBalance().subtract(amount));
+            usdSubAccount
+                    .setBalance(amount.multiply(BigDecimal.valueOf(USDspread)).divide(BigDecimal.valueOf(nbpTradeValue)));
+        } else {
+            usdSubAccount
+                    .setBalance(usdSubAccount.getBalance().subtract(amount));
+            plnSubAccount
+                    .setBalance(amount.multiply(BigDecimal.valueOf(PLNspread)).divide(BigDecimal.valueOf(nbpTradeValue)));
+        }
+        account.setModifyDate(DateUtils.getCurrTime());
+        subAccountRepository.saveAll(subAccountList);
+        accountRepository.save(account);
+    }
     private void validateCurrencyExchange(String currencyFrom, String currencyTo, Account account, BigDecimal amount) {
 
         List<String> ac = availableCurrencies == null ? Collections.emptyList() : List.of(availableCurrencies.split(","));
         if (!ac.contains(currencyTo) || !ac.contains(currencyFrom) ) {
             //blad - niemozliwa do zrealizowania transakcja
         }
-        if (currencyFrom == "PLN" && currencyTo == "USD" && account.getBalancePln().compareTo(amount) == -1) {
+        if (currencyFrom == "PLN" && currencyTo == "USD" && getBalanceOfCurrency(account, "PLN").compareTo(amount) == -1) {
             //blad - za malo srodkow na koncie
         }
-        if (currencyFrom == "USD" && currencyTo == "PLN" && account.getBalanceUsd().compareTo(amount) == -1) {
+        if (currencyFrom == "USD" && currencyTo == "PLN" && getBalanceOfCurrency(account, "USD").compareTo(amount) == -1) {
             //blad - za malo srodkow na koncie
         }
 
+    }
+
+    private BigDecimal getBalanceOfCurrency(Account account, String currency) {
+        return account.getSubAccountCollection().stream()
+                .filter(sa -> sa.getCurrency() == currency)
+                .findFirst().orElseThrow()
+                .getBalance();
     }
 }

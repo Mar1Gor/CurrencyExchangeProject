@@ -12,10 +12,6 @@ public class Account {
     @Id
     @Column(name = "acc_id")
     private String accId;
-    @Column(name = "balance_pln")
-    private BigDecimal balancePln;
-    @Column(name = "balance_usd")
-    private BigDecimal balanceUsd;
     @Column(name = "insert_date")
     private Date insertDate;
     @Column(name = "modify_date")
@@ -26,22 +22,23 @@ public class Account {
 
     @OneToMany(mappedBy = "account")
     private Collection<SubAccount> subAccountCollection;
-
-    public Account( BigDecimal balancePln, Date insertDate, Date modifyDate, BankUser bankUser) {
+    public Account(Date insertDate, Date modifyDate, BankUser bankUser, Collection<SubAccount> subAccountCollection) {
         this.accId = String.valueOf(UUID.randomUUID());
-        this.balancePln = balancePln;
+        this.insertDate = insertDate;
+        this.modifyDate = modifyDate;
+        this.bankUser = bankUser;
+        this.subAccountCollection = subAccountCollection;
+    }
+
+    public Account(Date insertDate, Date modifyDate, BankUser bankUser) {
+        this.accId = String.valueOf(UUID.randomUUID());
         this.insertDate = insertDate;
         this.modifyDate = modifyDate;
         this.bankUser = bankUser;
     }
 
-    public Account( BigDecimal balancePln, BigDecimal balanceUsd, Date insertDate, Date modifyDate, BankUser bankUser) {
-        this.balancePln = balancePln;
-        this.balanceUsd = balanceUsd;
-        this.insertDate = insertDate;
-        this.modifyDate = modifyDate;
-        this.bankUser = bankUser;
-    }
+
+
 
     public String getAccId() {
         return accId;
@@ -49,14 +46,6 @@ public class Account {
 
     public void setAccId(String accId) {
         this.accId = accId;
-    }
-
-    public BigDecimal getBalancePln() {
-        return balancePln;
-    }
-
-    public void setBalancePln(BigDecimal balancePln) {
-        this.balancePln = balancePln;
     }
 
     public Date getInsertDate() {
@@ -73,22 +62,6 @@ public class Account {
 
     public void setModifyDate(Date modifyDate) {
         this.modifyDate = modifyDate;
-    }
-
-    public BankUser getUser() {
-        return bankUser;
-    }
-
-    public void setUser(BankUser bankUser) {
-        this.bankUser = bankUser;
-    }
-
-    public BigDecimal getBalanceUsd() {
-        return balanceUsd;
-    }
-
-    public void setBalanceUsd(BigDecimal balanceUsd) {
-        this.balanceUsd = balanceUsd;
     }
 
     public BankUser getBankUser() {

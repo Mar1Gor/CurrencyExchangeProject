@@ -1,7 +1,9 @@
 package pl.bank.bankAccountProj.dto;
 
-import java.math.BigDecimal;
+import lombok.Data;
 
+import java.math.BigDecimal;
+@Data
 public class CreateUserDto {
 
     private String name;
@@ -24,35 +26,6 @@ public class CreateUserDto {
         this.startBalance = startBalance;
     }
 
-    public BigDecimal getStartBalance() {
-        return startBalance;
-    }
-
-    public void setStartBalance(BigDecimal startBalance) {
-        this.startBalance = startBalance;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public String getSurname() {
-        return surname;
-    }
-
-    public void setSurname(String surname) {
-        this.surname = surname;
-    }
-
-    public Long getPesel() {
-        return pesel;
-    }
-
-    public void setPesel(Long pesel) {
-        this.pesel = pesel;
+    public CreateUserDto() {
     }
 }
