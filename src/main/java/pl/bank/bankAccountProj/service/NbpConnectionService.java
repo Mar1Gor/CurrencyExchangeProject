@@ -1,9 +1,6 @@
 package pl.bank.bankAccountProj.service;
 
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
@@ -18,15 +15,9 @@ import pl.bank.bankAccountProj.exception.ApiException;
 @Service
 public class NbpConnectionService {
 
-    @Value("${nbpApiUrl:https://api.nbp.pl/api/exchangerates/rates/a/}")
-    private String nbpApiUrl;
-
-    @Autowired
-    private RestTemplate restTemplate;
-
     //@Cacheable("nbp_items")
     //@Retryable(backoff = @Backoff(maxDelay = 2000), include = {ResourceAccessException.class})
-    public Double getTodaysTradePlnValue(String currency) {
+    public Double getTodaysTradePlnValue(String currency, String nbpApiUrl) {
         log.info("Getting nbp url using [nbpApiUrl = {}]", nbpApiUrl);
         String requestUrl = nbpApiUrl + currency;
         ResponseEntity<NBPExchangeDto> response = null;
@@ -35,8 +26,8 @@ public class NbpConnectionService {
 
         try {
             log.info("Sending request to NBP service [request url = {}]", requestUrl);
-            response = restTemplate.exchange(requestUrl, HttpMethod.GET, null, new ParameterizedTypeReference<NBPExchangeDto>() {
-            });
+            response = new RestTemplate().getForEntity(requestUrl, NBPExchangeDto.class);
+
             status = response.getStatusCodeValue();
             body = response.getBody();
 

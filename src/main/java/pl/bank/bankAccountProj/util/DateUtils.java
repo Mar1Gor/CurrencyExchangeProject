@@ -13,7 +13,10 @@ public class DateUtils {
 
     public static Date convertStringDate(String date) {
         List<String> tmp = List.of(date.split("-"));
-        return  new Date(Integer.valueOf(tmp.get(0)), Integer.valueOf(tmp.get(1)) - 1, Integer.valueOf(tmp.get(2)));
-
+        return new Calendar.Builder()
+                .setDate(Integer.valueOf(tmp.get(0)),
+                        Integer.valueOf(tmp.get(1)) - 1,
+                        Integer.valueOf(tmp.get(2))).build()
+                .getTime();
     }
 }

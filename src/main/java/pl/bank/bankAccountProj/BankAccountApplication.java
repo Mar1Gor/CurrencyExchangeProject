@@ -16,7 +16,6 @@ public class BankAccountApplication extends SpringBootServletInitializer {
         return builder.sources(BankAccountApplication.class);
     }
 
-
     public static void main(String[] args) {
         SpringApplication springApplication = new SpringApplication();
         springApplication.setSources(new HashSet(Arrays.asList(BankAccountApplication.class)));

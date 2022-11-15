@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 import pl.bank.bankAccountProj.dto.CreateUserDto;
 import pl.bank.bankAccountProj.entity.BankUser;
@@ -22,16 +23,15 @@ public class UserController {
         this.userService = userService;
     }
 
-
     @PostMapping("/user/create")
-    public ResponseEntity<BankUser> createUser(CreateUserDto userData) {
+    public ResponseEntity<BankUser> createUser(@RequestBody CreateUserDto userData) {
         log.debug("Start method createUser using: {}", userData);
-        BankUser userr = userService.createUser(userData);
-        if (userr == null) {
+        BankUser user = userService.createUser(userData);
+        if (user == null) {
             log.warn("End method createUser with data: {}, not created", userData);
             return ResponseEntity.noContent().build();
         }
         log.info("End method createUser with data: {}.", userData);
-        return ResponseEntity.ok(userr);
+        return ResponseEntity.ok(user);
     }
 }

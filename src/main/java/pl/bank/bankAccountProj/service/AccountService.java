@@ -24,15 +24,15 @@ import java.util.Objects;
 @Service
 public class AccountService {
 
-
     private final UserRepository userRepository;
     private final AccountRepository accountRepository;
     private final NbpConnectionService nbpConnectionService;
-
     private final SubAccountRepository subAccountRepository;
 
     @Value("${availableCurrencies:PLN,USD}")
     private String availableCurrencies;
+    @Value("${nbpApiUrl:https://api.nbp.pl/api/exchangerates/rates/a/}")
+    private String nbpApiUrl;
     @Value("${USDspread:1}")
     private Integer USDspread;
     @Value("${PLNspread:1}")//todo do poprawy logika
@@ -60,7 +60,7 @@ public class AccountService {
                 .build();
     }
     @Transactional
-    public ExchangeCurrencyDto currencyExchangeV2(String currencyFrom, String currencyTo, String accountId, BigDecimal amount) {
+    public ExchangeCurrencyDto currencyExchange(String currencyFrom, String currencyTo, String accountId, BigDecimal amount) {
         Account account = accountRepository.getById(accountId);
         if (account == null) {
             //blad - nieznaleziono rachunku
@@ -68,14 +68,14 @@ public class AccountService {
         List<SubAccount> subAccountList = (List<SubAccount>) account.getSubAccountCollection();
         validateCurrencyExchange(currencyFrom, currencyTo, account, amount);
         // dla zalozenia ze operujemy tylko na wymianie z PLN tak jak w polskich bankach
-        Double plnTradeValue = nbpConnectionService.getTodaysTradePlnValue(currencyFrom == "PLN" ? currencyTo : currencyFrom);
+        Double plnTradeValue = nbpConnectionService.getTodaysTradePlnValue(currencyFrom == "PLN" ? currencyTo : currencyFrom, nbpApiUrl);
         if (plnTradeValue == 0) {
             //blad - blad pobierania danych z nbp
         }
         if (currencyFrom == "PLN") {
-            doExchangeV2(true, amount, account, subAccountList, plnTradeValue);
+            doExchange(true, amount, account, subAccountList, plnTradeValue);
         } else {
-            doExchangeV2(false, amount, account, subAccountList, plnTradeValue);
+            doExchange(false, amount, account, subAccountList, plnTradeValue);
         }
         return ExchangeCurrencyDto
                 .builder()
@@ -92,7 +92,7 @@ public class AccountService {
         return finalBalanceMap;
     }
 
-    private void doExchangeV2(boolean fromPLN, BigDecimal amount, Account account, List<SubAccount> subAccountList, Double nbpTradeValue) {
+    private void doExchange(boolean fromPLN, BigDecimal amount, Account account, List<SubAccount> subAccountList, Double nbpTradeValue) {
         SubAccount plnSubAccount = subAccountList.stream()
                 .filter(sa -> Objects.equals(sa.getCurrency(), "PLN"))
                 .findFirst().orElse(new SubAccount());

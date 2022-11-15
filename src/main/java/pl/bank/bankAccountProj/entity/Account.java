@@ -22,6 +22,10 @@ public class Account {
 
     @OneToMany(mappedBy = "account")
     private Collection<SubAccount> subAccountCollection;
+
+    public Account() {
+    }
+
     public Account(Date insertDate, Date modifyDate, BankUser bankUser, Collection<SubAccount> subAccountCollection) {
         this.accId = String.valueOf(UUID.randomUUID());
         this.insertDate = insertDate;

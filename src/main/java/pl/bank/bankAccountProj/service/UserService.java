@@ -20,14 +20,12 @@ import java.util.Date;
 import java.util.List;
 
 
-
 @Slf4j
 @Service
 public class UserService {
 
     private final UserRepository userRepository;
     private final AccountRepository accountRepository;
-
     private final SubAccountRepository subAccountRepository;
 
     @Autowired
@@ -43,28 +41,23 @@ public class UserService {
         Account newAccount = new Account(DateUtils.getCurrTime(), DateUtils.getCurrTime(), newBankUser);
         SubAccount newSubAccountPln = new SubAccount(userData.getStartBalance(), "PLN", DateUtils.getCurrTime(), newAccount);
         SubAccount newSubAccountUsd = new SubAccount(BigDecimal.ZERO, "USD", DateUtils.getCurrTime(), newAccount);
-        subAccountRepository.save(newSubAccountPln);
-        subAccountRepository.save(newSubAccountUsd);
         userRepository.save(newBankUser);
         accountRepository.save(newAccount);
+        subAccountRepository.save(newSubAccountPln);
+        subAccountRepository.save(newSubAccountUsd);
         return newBankUser;
     }
 
-
-
     private void validateUserData(CreateUserDto accountData) {
         List<String> errorFields = new ArrayList<>();
-        if (accountData.getName() == null || accountData.getName().trim() == "") //isblank
-        {
-            errorFields.add("name");
+        if (accountData.getName() == null || accountData.getName().trim() == "") {
+            errorFields.add(" name : " + accountData.getName());
         }
-        if (accountData.getSurname() == null || accountData.getSurname().trim() == "") //isblank
-        {
-            errorFields.add("surname");
+        if (accountData.getSurname() == null || accountData.getSurname().trim() == "") {
+            errorFields.add(" surname : " + accountData.getSurname());
         }
-        if (accountData.getPesel() == null || !isUserOver18(accountData.getPesel()) || isUserAlreadyRegistered(accountData.getPesel())) //isblank check if walid
-        {
-            errorFields.add("pesel");
+        if (accountData.getPesel() == null || !isUserOver18(accountData.getPesel()) || isUserAlreadyRegistered(accountData.getPesel())) {
+            errorFields.add(" pesel : " + accountData.getPesel());
         }
 
         if (!errorFields.isEmpty()) {
@@ -74,16 +67,21 @@ public class UserService {
     }
 
     private boolean isUserAlreadyRegistered(Long pesel) {
-        return userRepository.findByPesel(pesel).orElse(null) == null;
+        return userRepository.findByPesel(pesel).orElse(null) != null;
     }
 
     private boolean isUserOver18(Long pesel) {
         String peselAsString = Long.toString(pesel);
-        Integer yearNumber = peselAsString.charAt(0) + peselAsString.charAt(1);
-        Integer monthNumber = peselAsString.charAt(2) + peselAsString.charAt(3);
-        Integer dayNumber = peselAsString.charAt(4) + peselAsString.charAt(5);
+        if (peselAsString.length() != 11) {
+            log.error("WRONG PESEL LENGTH");
+            return false;
+        }
+        int yearNumber = Integer.parseInt(String.valueOf(peselAsString.charAt(0)) + String.valueOf(peselAsString.charAt(1)));
+        int monthNumber = Integer.parseInt(String.valueOf(peselAsString.charAt(2)) + String.valueOf(peselAsString.charAt(3)));
+        int dayNumber = Integer.parseInt(String.valueOf(peselAsString.charAt(4)) + String.valueOf(peselAsString.charAt(5)));
         if (monthNumber > 12) {
             monthNumber = monthNumber - 20;
+            yearNumber = 100 + yearNumber;
         }
         Date userBirthday = new Date(yearNumber, monthNumber - 1, dayNumber);
         Calendar todaysDateMinus18yr = Calendar.getInstance();
