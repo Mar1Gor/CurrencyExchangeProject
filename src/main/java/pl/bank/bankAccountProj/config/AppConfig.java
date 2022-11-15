@@ -11,7 +11,7 @@ import org.springframework.web.client.RestTemplate;
 @ComponentScan(basePackages = {"pl.bank.bankAccountProj"})
 public class AppConfig {
 
-  @Bean
+    @Bean
     public RestTemplate getRestTemplate() {
         return new RestTemplate();
     }

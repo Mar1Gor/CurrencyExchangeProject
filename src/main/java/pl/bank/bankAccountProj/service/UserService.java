@@ -36,15 +36,27 @@ public class UserService {
     }
 
     public BankUser createUser(CreateUserDto userData) {
-        validateUserData(userData);
+        try {
+            validateUserData(userData);
+        } catch (ApiException ae) {
+            throw ae;
+        } catch (Exception e) {
+            log.error("Exception caught at validateUserData in createUser:", e);
+            throw new ApiException("500", "internalError");
+        }
         BankUser newBankUser = new BankUser(userData.getPesel(), userData.getName(), userData.getSurname(), DateUtils.getCurrTime());
         Account newAccount = new Account(DateUtils.getCurrTime(), DateUtils.getCurrTime(), newBankUser);
         SubAccount newSubAccountPln = new SubAccount(userData.getStartBalance(), "PLN", DateUtils.getCurrTime(), newAccount);
         SubAccount newSubAccountUsd = new SubAccount(BigDecimal.ZERO, "USD", DateUtils.getCurrTime(), newAccount);
-        userRepository.save(newBankUser);
-        accountRepository.save(newAccount);
-        subAccountRepository.save(newSubAccountPln);
-        subAccountRepository.save(newSubAccountUsd);
+        try {
+            userRepository.save(newBankUser);
+            accountRepository.save(newAccount);
+            subAccountRepository.save(newSubAccountPln);
+            subAccountRepository.save(newSubAccountUsd);
+        } catch (Exception e) {
+            log.error("Exception caught at saving data in createUser:", e);
+            throw new ApiException("500", "(4123)");
+        }
         return newBankUser;
     }
 

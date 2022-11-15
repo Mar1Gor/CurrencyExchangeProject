@@ -26,6 +26,10 @@ public class AccountController {
     public ResponseEntity<GetAccountInfoDto> getAccountInfo(@RequestParam(name = "accId") String accountId) {//todo
         log.info("Start method getAccountInfo with param {}", accountId);
         GetAccountInfoDto accInfo = accountService.getAccountInfo(accountId);
+        if (accInfo == null) {
+            log.warn("End method getAccountInfo, account not found");
+            return ResponseEntity.noContent().build();
+        }
         log.info("End method getAccountInfo with params {}. Returning {}", accountId, accInfo);
         return ResponseEntity.ok(accInfo);
     }
